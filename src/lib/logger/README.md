@@ -1,6 +1,6 @@
 # Topcoder Logging library
 
-This is the library tha provides outo joi validation and outo and apm instrumentation
+This is the library tha provides auto joi validation and auto apm instrumentation
 
 ## Configuration
 
