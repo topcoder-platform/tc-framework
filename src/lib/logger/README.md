@@ -7,16 +7,16 @@ This is the library tha provides auto joi validation and auto apm instrumentatio
 The following parameters can be set in config files or in env variables:
 
 - LOG_LEVEL: the log level;
-- Service_NAME: the service name
-- APPLICATION_NAME: the application name
-- EXPORTER_URL: the exporter url
+- APM_OTLP_TRACE_EXPORTER_URL: The OTLP Trace Exporter URL
+- APM_SERVICE_NAME: the service name
+- APM_TRACER_NAME: the tracer name
 
 ## Examples
 
 ### Logging
 
 ```javascript
-const logger = require('@topcoder-platform/tc-framework/logger')
+const logger = require('@topcoder-platform/tc-framework/logger')(config)
 
 // Info
 logger.info('Information')
@@ -34,7 +34,7 @@ logger.error('Error message')
 ### Joi validation
 
 ```javascript
-const logger = require('@topcoder-platform/tc-framework/logger')
+const logger = require('@topcoder-platform/tc-framework/logger')(config)
 const Joi = require('@hapi/joi')
 
 async function sampleFunction (data) {
@@ -58,7 +58,7 @@ logger.buildService(module.exports, 'application_name', 'application_version')
 ### Apm instrumentation
 
 ```javascript
-const logger = require('@topcoder-platform/tc-framework/logger')
+const logger = require('@topcoder-platform/tc-framework/logger')(config)
 
 function testFunction (message) {
   // do something

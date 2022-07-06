@@ -8,7 +8,9 @@ const util = require('util')
 const getParams = require('get-parameter-names')
 const { createLogger, format, transports } = require('winston')
  const { SpanStatusCode } = require('@opentelemetry/api')
- const tracer = require('./tracer')()
+ const Tracer = require('./tracer')
+
+ const spanContext = []
 
 /**
  * 
@@ -16,6 +18,7 @@ const { createLogger, format, transports } = require('winston')
  * @returns 
  */
 module.exports = (config) => {
+  const tracer = Tracer(config)
 
   const logger = createLogger({
     level: config.LOG_LEVEL,
@@ -154,20 +157,25 @@ module.exports = (config) => {
 * Decorate all functions of a service and log debug information if DEBUG is enabled
 * @param {Object} service the service
 */
-logger.decorateWithApm = (service, serviceName, version) => {
+logger.decorateWithApm = (service) => {
   _.each(service, (method, name) => {
     if (!method.apm) {
       return
     }
     service[name] = async function () {
-      const span = tracer.startSpan(name)
-      console.log(name)
-      console.log('bbefore')
+      let span
+      // check if caller has alredy a span
+      if (spanContext.length > 0) {
+        const ctx = trace.setSpan(context.active(), spanContext[spanContext.length - 1]);
+        span = tracer.startSpan(name, undefined, ctx);
+      } else {
+        span = tracer.startSpan(name)
+      }
+      spanContext.push(span)
       // If we get here and nothing has thrown, the request completed successfully
       try {
         const res = await method.apply(this, arguments)
         span.setStatus({ code: SpanStatusCode.OK })
-        console.log('after')
         return res
       } catch (e) {
         // When we catch an error, we want to show that an error occurred
@@ -175,11 +183,10 @@ logger.decorateWithApm = (service, serviceName, version) => {
           code: SpanStatusCode.ERROR,
           message: e.message
         })
-        console.log('errpr')
       } finally {
         // Every span must be ended or it will not be exported
         span.end()
-        console.log('finally')
+        spanContext.pop()
       }
     }
   })
@@ -189,10 +196,10 @@ logger.decorateWithApm = (service, serviceName, version) => {
   * Apply logger and validation decorators
   * @param {Object} service the service to wrap
   */
-  logger.buildService = (service, serviceName, version) => {
+  logger.buildService = (service) => {
     logger.decorateWithValidators(service)
     logger.decorateWithLogging(service)
-    logger.decorateWithApm(service, serviceName, version)
+    logger.decorateWithApm(service)
   }
   
   return logger
