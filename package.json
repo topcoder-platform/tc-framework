@@ -9,6 +9,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@opentelemetry/instrumentation-winston": "^0.29.0",
+    "@opentelemetry/semantic-conventions": "^1.3.1",
     "config": "^3.3.7",
     "get-parameter-names": "^0.3.0",
     "joi": "^17.6.0",
