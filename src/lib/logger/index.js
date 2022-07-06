@@ -166,7 +166,7 @@ logger.decorateWithApm = (service) => {
       let span
       // check if caller has alredy a span
       if (spanContext.length > 0) {
-        const ctx = trace.setSpan(context.active(), spanContext[spanContext.length - 1]);
+        const ctx = tracer.setSpan(context.active(), spanContext[spanContext.length - 1]);
         span = tracer.startSpan(name, undefined, ctx);
       } else {
         span = tracer.startSpan(name)
