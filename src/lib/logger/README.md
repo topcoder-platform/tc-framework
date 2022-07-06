@@ -16,7 +16,7 @@ The following parameters can be set in config files or in env variables:
 ### Logging
 
 ```javascript
-const logger = require('@topcoder-platform/tc-framework/logger')(config)
+const logger = require('tc-framework').logger(config)
 
 // Info
 logger.info('Information')
@@ -34,7 +34,7 @@ logger.error('Error message')
 ### Joi validation
 
 ```javascript
-const logger = require('@topcoder-platform/tc-framework/logger')(config)
+const logger = require('tc-framework').logger(config)
 const Joi = require('@hapi/joi')
 
 async function sampleFunction (data) {
@@ -52,13 +52,13 @@ module.exports = {
   sampleFunction
 }
 
-logger.buildService(module.exports, 'application_name', 'application_version')
+logger.buildService(module.exports)
 ```
 
 ### Apm instrumentation
 
 ```javascript
-const logger = require('@topcoder-platform/tc-framework/logger')(config)
+const logger = require('tc-framework').logger(config)
 
 function testFunction (message) {
   // do something
@@ -70,6 +70,6 @@ module.exports = {
   testFunction
 }
 
-logger.buildService(module.exports, 'application_name', 'application_version')
+logger.buildService(module.exports)
 ```
 
