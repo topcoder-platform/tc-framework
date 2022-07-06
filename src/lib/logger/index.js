@@ -7,18 +7,12 @@ const Joi = require('joi')
 const util = require('util')
 const getParams = require('get-parameter-names')
 const { createLogger, format, transports } = require('winston')
- const { SpanStatusCode } = require('@opentelemetry/api')
- const Tracer = require('./tracer')
+const { SpanStatusCode, context, trace } = require('@opentelemetry/api')
+const Tracer = require('./tracer')
 
- const spanContext = []
-
-/**
- * 
- * @param {Object} config The config object
- * @returns 
- */
 module.exports = (config) => {
   const tracer = Tracer(config)
+  const spanContext = []
 
   const logger = createLogger({
     level: config.LOG_LEVEL,
@@ -153,44 +147,44 @@ module.exports = (config) => {
 
 
 
-/**
-* Decorate all functions of a service and log debug information if DEBUG is enabled
-* @param {Object} service the service
-*/
-logger.decorateWithApm = (service) => {
-  _.each(service, (method, name) => {
-    if (!method.apm) {
-      return
-    }
-    service[name] = async function () {
-      let span
-      // check if caller has alredy a span
-      if (spanContext.length > 0) {
-        const ctx = tracer.setSpan(context.active(), spanContext[spanContext.length - 1]);
-        span = tracer.startSpan(name, undefined, ctx);
-      } else {
-        span = tracer.startSpan(name)
+  /**
+  * Decorate all functions of a service and log debug information if DEBUG is enabled
+  * @param {Object} service the service
+  */
+  logger.decorateWithApm = (service) => {
+    _.each(service, (method, name) => {
+      if (!method.apm) {
+        return
       }
-      spanContext.push(span)
-      // If we get here and nothing has thrown, the request completed successfully
-      try {
-        const res = await method.apply(this, arguments)
-        span.setStatus({ code: SpanStatusCode.OK })
-        return res
-      } catch (e) {
-        // When we catch an error, we want to show that an error occurred
-        span.setStatus({
-          code: SpanStatusCode.ERROR,
-          message: e.message
-        })
-      } finally {
-        // Every span must be ended or it will not be exported
-        span.end()
-        spanContext.pop()
+      service[name] = async function () {
+        let span
+        // check if caller has alredy a span
+        if (spanContext.length > 0) {
+          const ctx = trace.setSpan(context.active(), spanContext[spanContext.length - 1]);
+          span = tracer.startSpan(name, undefined, ctx);
+        } else {
+          span = tracer.startSpan(name)
+        }
+        spanContext.push(span)
+        // If we get here and nothing has thrown, the request completed successfully
+        try {
+          const res = await method.apply(this, arguments)
+          span.setStatus({ code: SpanStatusCode.OK })
+          return res
+        } catch (e) {
+          // When we catch an error, we want to show that an error occurred
+          span.setStatus({
+            code: SpanStatusCode.ERROR,
+            message: e.message
+          })
+        } finally {
+          // Every span must be ended or it will not be exported
+          span.end()
+          spanContext.pop()
+        }
       }
-    }
-  })
-}
+    })
+  }
 
   /**
   * Apply logger and validation decorators
@@ -201,6 +195,6 @@ logger.decorateWithApm = (service) => {
     logger.decorateWithLogging(service)
     logger.decorateWithApm(service)
   }
-  
+
   return logger
 }
