@@ -60,11 +60,15 @@ logger.buildService(module.exports)
 ```javascript
 const logger = require('tc-framework').logger(config)
 
-function testFunction (message) {
-  // do something
+async function testFunction (message) {
+  const span = await logger.startSpan('testFunction')
+  try {
+    // do something
+    await logger.endSpan(span)
+  } catch (e) {
+    await logger.endSpanWithError(span, e)
+  }
 }
-
-testFunction.apm = true
 
 module.exports = {
   testFunction

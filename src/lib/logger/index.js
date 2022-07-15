@@ -145,45 +145,48 @@ module.exports = (config) => {
     })
   }
 
-
+  /**
+   * Start a new span. The parent span will be automatically attached if exists
+   * @param {String} name the span name
+   * @returns the created span
+   */
+  logger.startSpan = async (name) => {
+    let span
+    // check if a parent span exists
+    if (spanContext.length > 0) {
+      const ctx = trace.setSpan(context.active(), spanContext[spanContext.length - 1]);
+      span = await tracer.startSpan(name, undefined, ctx);
+    } else {
+      span = await tracer.startSpan(name)
+    }
+    spanContext.push(span)
+    return span
+  }
 
   /**
-  * Decorate all functions of a service and log debug information if DEBUG is enabled
-  * @param {Object} service the service
-  */
-  logger.decorateWithApm = (service) => {
-    _.each(service, (method, name) => {
-      if (!method.apm) {
-        return
-      }
-      service[name] = async function () {
-        let span
-        // check if caller has alredy a span
-        if (spanContext.length > 0) {
-          const ctx = trace.setSpan(context.active(), spanContext[spanContext.length - 1]);
-          span = tracer.startSpan(name, undefined, ctx);
-        } else {
-          span = tracer.startSpan(name)
-        }
-        spanContext.push(span)
-        // If we get here and nothing has thrown, the request completed successfully
-        try {
-          const res = await method.apply(this, arguments)
-          span.setStatus({ code: SpanStatusCode.OK })
-          return res
-        } catch (e) {
-          // When we catch an error, we want to show that an error occurred
-          span.setStatus({
-            code: SpanStatusCode.ERROR,
-            message: e.message
-          })
-        } finally {
-          // Every span must be ended or it will not be exported
-          span.end()
-          spanContext.pop()
-        }
-      }
+   * End a span
+   * @param {Object} span the span
+   */
+  logger.endSpan = async (span) => {
+    if (!span) return
+    await span.setStatus({ code: SpanStatusCode.OK })
+    span.end()
+    spanContext.pop()
+  }
+
+  /**
+   * End a span with error
+   * @param {Object} span the span
+   * @param {Error} error the error object
+   */
+  logger.endSpanWithError = async (span, error) => {
+    if (!span) return
+    await span.setStatus({
+      code: SpanStatusCode.ERROR,
+      message: error ? error.message : 'Unknown error'
     })
+    span.end()
+    spanContext.pop()
   }
 
   /**
@@ -193,7 +196,6 @@ module.exports = (config) => {
   logger.buildService = (service) => {
     logger.decorateWithValidators(service)
     logger.decorateWithLogging(service)
-    logger.decorateWithApm(service)
   }
 
   return logger

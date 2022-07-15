@@ -19,7 +19,7 @@
     "config": "^3.3.7",
     "get-parameter-names": "^0.3.0",
     "joi": "^17.6.0",
-    "loadash": "^1.0.0",
+    "lodash": "^4.17.21",
     "winston": "^3.8.0"
   }
 }
