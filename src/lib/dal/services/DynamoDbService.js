@@ -38,12 +38,19 @@ module.exports = (databaseServiceConfig) => {
   // Update the dynamoose AWS global configuration
   // construct the aws global configuration
   // See the supported configuration at https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/Config.html#constructor-property
-  const awsConfig = {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-    region: process.env.AWS_REGION
+  // const awsConfig = {
+  //  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+  //  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  //  region: process.env.AWS_REGION
     // maxRetries: 10
-  }
+  //}
+   const awsConfig = config.AMAZON.IS_LOCAL_DB ? {
+     accessKeyId: config.AMAZON.AWS_ACCESS_KEY_ID,
+     secretAccessKey: config.AMAZON.AWS_SECRET_ACCESS_KEY,
+     region: config.AMAZON.AWS_REGION
+   } : {
+     region: config.AMAZON.AWS_REGION
+   }
 
   dynamoose.AWS.config.update(awsConfig)
 
