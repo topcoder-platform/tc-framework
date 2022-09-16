@@ -211,7 +211,7 @@ module.exports = (databaseServiceConfig) => {
     const entities = []
     const theHashKeys = hashKeys || []
     for (const key of theHashKeys) {
-        const entity = dynamoDbService.getByHashKey(modelName, key, hashKeyName, false)
+        const entity = await dynamoDbService.getByHashKey(modelName, key, hashKeyName, false)
         if(!_.isNull(entity)) {
           entities.push(entity)
         }
