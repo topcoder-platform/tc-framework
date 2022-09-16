@@ -139,10 +139,52 @@ module.exports = (databaseServiceConfig) => {
   }
 
   /**
+   * Gets a document by hash key
+   *
+   * @param {String} tableName The table name in which to perform the search
+   * @param {String} hashKeyValue The hash key value to search by
+   * @param {String} hashKeyName The name of the hash key, default value is 'id'
+   * @param {boolean} throwErrorIfNotFound whether to throw an error if the record is not found
+   *                  If it is false and the record is not found, then it resolves to null
+   * @returns Promise of the found record
+   */
+   dynamoDbService.getByHashKey = async (tableName, hashKeyValue, hashKeyName, throwErrorIfNotFound) => {
+    const span = await logger.startSpan('dynamoDbService.getByHashKey')
+    if(_.isUndefined(hashKeyName)) {
+      hashKeyName = 'id'
+    }
+    const res = await new Promise((resolve, reject) => {
+      models[tableName]
+        .query(hashKeyName)
+        .eq(hashKeyValue)
+        .exec((err, result) => {
+          if (err) {
+            reject(err)
+          } else if (result.length > 0) {
+            resolve(result[0])
+          } else {
+            if(throwErrorIfNotFound) {
+              reject(
+                new errors.NotFoundError(
+                  `${tableName} with hashKeyName: ${hashKeyValue} doesn't exist`
+                )
+              )
+            } else {
+              resolve(null)
+            }
+          }
+        })
+    })
+    await logger.endSpan(span)
+    return res
+  }
+
+  /**
  * Get Data by model ids
  * @param {String} modelName The dynamoose model name
  * @param {Array} ids The ids
  * @returns {Promise<Array>} the found entities
+ * @throws {Error} If any of the ids is not found in the database
  */
   dynamoDbService.getByIds = async (modelName, ids) => {
     const span = await logger.startSpan('dynamoDbService.getByIds')
@@ -150,6 +192,29 @@ module.exports = (databaseServiceConfig) => {
     const theIds = ids || []
     for (const id of theIds) {
       entities.push(await dynamoDbService.getById(modelName, id))
+    }
+    await logger.endSpan(span)
+    return entities
+  }
+
+/**
+ * Searches by hashkeys
+ * If any hash key is not present in the database, it is ignored and not added to the results
+ * 
+ * @param {String} modelName The model name
+ * @param {Array} hashKeys The hash keys values to search by
+ * @param {String} hashKeyName The name of the hash key field
+ * @returns The list of records matching the specified hash keys values
+ */
+  dynamoDbService.searchByHashKeys = async (modelName, hashKeys, hashKeyName) => {
+    const span = await logger.startSpan('dynamoDbService.searchByHashKeys')
+    const entities = []
+    const theHashKeys = hashKeys || []
+    for (const key of theHashKeys) {
+        const entity = dynamoDbService.getByHashKey(modelName, key, hashKeyName, false)
+        if(!_.isNull(entity)) {
+          entities.push(entity)
+        }
     }
     await logger.endSpan(span)
     return entities
