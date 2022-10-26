@@ -19,7 +19,7 @@ module.exports = (config) => {
 })
 provider.addSpanProcessor(new SimpleSpanProcessor(exporter))
 provider.addSpanProcessor(new BatchSpanProcessor(new BatchSpanProcessor(exporter)))
-provider.addSpanProcessor(new SimpleSpanProcessor(new ConsoleSpanExporter()))
+// provider.addSpanProcessor(new SimpleSpanProcessor(new ConsoleSpanExporter()))
 provider.register()
 
 registerInstrumentations({
