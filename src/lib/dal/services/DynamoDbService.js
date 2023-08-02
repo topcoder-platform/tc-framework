@@ -42,15 +42,17 @@ module.exports = (databaseServiceConfig) => {
   //  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
   //  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
   //  region: process.env.AWS_REGION
-    // maxRetries: 10
-  //}
-   const awsConfig = config.AMAZON.IS_LOCAL_DB ? {
-     accessKeyId: config.AMAZON.AWS_ACCESS_KEY_ID,
-     secretAccessKey: config.AMAZON.AWS_SECRET_ACCESS_KEY,
-     region: config.AMAZON.AWS_REGION
-   } : {
-     region: config.AMAZON.AWS_REGION
-   }
+  // maxRetries: 10
+  // }
+  const awsConfig = config.AMAZON.IS_LOCAL_DB
+    ? {
+        accessKeyId: config.AMAZON.AWS_ACCESS_KEY_ID,
+        secretAccessKey: config.AMAZON.AWS_SECRET_ACCESS_KEY,
+        region: config.AMAZON.AWS_REGION
+      }
+    : {
+        region: config.AMAZON.AWS_REGION
+      }
 
   dynamoose.AWS.config.update(awsConfig)
 
@@ -148,9 +150,9 @@ module.exports = (databaseServiceConfig) => {
    *                  If it is false and the record is not found, then it resolves to null
    * @returns Promise of the found record
    */
-   dynamoDbService.getByHashKey = async (tableName, hashKeyValue, hashKeyName, throwErrorIfNotFound) => {
+  dynamoDbService.getByHashKey = async (tableName, hashKeyValue, hashKeyName, throwErrorIfNotFound) => {
     const span = await logger.startSpan('dynamoDbService.getByHashKey')
-    if(_.isUndefined(hashKeyName)) {
+    if (_.isUndefined(hashKeyName)) {
       hashKeyName = 'id'
     }
     const res = await new Promise((resolve, reject) => {
@@ -163,7 +165,7 @@ module.exports = (databaseServiceConfig) => {
           } else if (result.length > 0) {
             resolve(result[0])
           } else {
-            if(throwErrorIfNotFound) {
+            if (throwErrorIfNotFound) {
               reject(
                 new errors.NotFoundError(
                   `${tableName} with hashKeyName: ${hashKeyValue} doesn't exist`
@@ -197,10 +199,10 @@ module.exports = (databaseServiceConfig) => {
     return entities
   }
 
-/**
+  /**
  * Searches by hashkeys
  * If any hash key is not present in the database, it is ignored and not added to the results
- * 
+ *
  * @param {String} modelName The model name
  * @param {Array} hashKeys The hash keys values to search by
  * @param {String} hashKeyName The name of the hash key field
@@ -211,10 +213,10 @@ module.exports = (databaseServiceConfig) => {
     const entities = []
     const theHashKeys = hashKeys || []
     for (const key of theHashKeys) {
-        const entity = await dynamoDbService.getByHashKey(modelName, key, hashKeyName, false)
-        if(!_.isNull(entity)) {
-          entities.push(entity)
-        }
+      const entity = await dynamoDbService.getByHashKey(modelName, key, hashKeyName, false)
+      if (!_.isNull(entity)) {
+        entities.push(entity)
+      }
     }
     await logger.endSpan(span)
     return entities
