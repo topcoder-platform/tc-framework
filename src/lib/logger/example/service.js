@@ -27,7 +27,7 @@ async function readFromES () {
 async function getChallenges () {
   const span = await logger.startSpan('getChallenges')
   await getM2mToken()
-  const {data} = await readFromES()
+  const { data } = await readFromES()
   await logger.endSpan(span)
   return data
 }

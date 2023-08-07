@@ -94,24 +94,43 @@ module.exports = (config) => {
     }
     _.each(service, (method, name) => {
       const params = method.params || getParams(method)
-      service[name] = async function () {
-        logger.debug(`ENTER ${name}`)
-        logger.debug('input arguments')
-        const args = Array.prototype.slice.call(arguments)
-        logger.debug(util.inspect(_sanitizeObject(_combineObject(params, args))))
-        try {
-          const result = await method.apply(this, arguments)
-          logger.debug(`EXIT ${name}`)
-          logger.debug('output arguments')
-          if (result !== null && result !== undefined) {
-            logger.debug(util.inspect(_sanitizeObject(result)))
+      method.constructor.name === 'AsyncFunction'
+        ? service[name] = async function () {
+          logger.debug(`ENTER ${name}`)
+          logger.debug('input arguments')
+          const args = Array.prototype.slice.call(arguments)
+          logger.debug(util.inspect(_sanitizeObject(_combineObject(params, args))))
+          try {
+            const result = await method.apply(this, arguments)
+            logger.debug(`EXIT ${name}`)
+            logger.debug('output arguments')
+            if (result !== null && result !== undefined) {
+              logger.debug(util.inspect(_sanitizeObject(result)))
+            }
+            return result
+          } catch (e) {
+            logger.logFullError(e, name)
+            throw e
           }
-          return result
-        } catch (e) {
-          logger.logFullError(e, name)
-          throw e
         }
-      }
+        : service[name] = function () {
+          logger.debug(`ENTER ${name}`)
+          logger.debug('input arguments')
+          const args = Array.prototype.slice.call(arguments)
+          logger.debug(util.inspect(_sanitizeObject(_combineObject(params, args))))
+          try {
+            const result = method.apply(this, arguments)
+            logger.debug(`EXIT ${name}`)
+            logger.debug('output arguments')
+            if (result !== null && result !== undefined) {
+              logger.debug(util.inspect(_sanitizeObject(result)))
+            }
+            return result
+          } catch (e) {
+            logger.logFullError(e, name)
+            throw e
+          }
+        }
     })
   }
 
@@ -127,20 +146,35 @@ module.exports = (config) => {
         return
       }
       const params = getParams(method)
-      service[name] = async function () {
-        const args = Array.prototype.slice.call(arguments)
-        const value = _combineObject(params, args)
-        const normalized = Joi.attempt(value, method.schema)
+      method.constructor.name === 'AsyncFunction'
+        ? service[name] = async function () {
+          const args = Array.prototype.slice.call(arguments)
+          const value = _combineObject(params, args)
+          const normalized = Joi.attempt(value, method.schema)
 
-        const newArgs = []
-        // Joi will normalize values
-        // for example string number '1' to 1
-        // if schema type is number
-        _.each(params, (param) => {
-          newArgs.push(normalized[param])
-        })
-        return method.apply(this, newArgs)
-      }
+          const newArgs = []
+          // Joi will normalize values
+          // for example string number '1' to 1
+          // if schema type is number
+          _.each(params, (param) => {
+            newArgs.push(normalized[param])
+          })
+          return method.apply(this, newArgs)
+        }
+        : service[name] = function () {
+          const args = Array.prototype.slice.call(arguments)
+          const value = _combineObject(params, args)
+          const normalized = Joi.attempt(value, method.schema)
+
+          const newArgs = []
+          // Joi will normalize values
+          // for example string number '1' to 1
+          // if schema type is number
+          _.each(params, (param) => {
+            newArgs.push(normalized[param])
+          })
+          return method.apply(this, newArgs)
+        }
       service[name].params = params
     })
   }
@@ -154,8 +188,8 @@ module.exports = (config) => {
     let span
     // check if a parent span exists
     if (spanContext.length > 0) {
-      const ctx = trace.setSpan(context.active(), spanContext[spanContext.length - 1]);
-      span = await tracer.startSpan(name, undefined, ctx);
+      const ctx = trace.setSpan(context.active(), spanContext[spanContext.length - 1])
+      span = await tracer.startSpan(name, undefined, ctx)
     } else {
       span = await tracer.startSpan(name)
     }
